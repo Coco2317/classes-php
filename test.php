@@ -10,43 +10,48 @@ require_once __DIR__ . '/user.php';
 try {
     $u = new User();
 
-    // change login/email each run to avoid UNIQUE constraint errors
-    $login = 'coco' . rand(1000, 9999);
+    // On fixe le login pour garder toujours le même utilisateur
+    $login = 'coco6119';
+    $password = 'Password@123'; // respecte les règles (Maj, min, chiffre, spécial)
+    $email = "$login@test.com";
 
     echo "<pre>";
 
-    echo "== register ==\n";
-    $u->register($login, "password123", "$login@test.com", "Nicole", "Castillo");
+    // === Vérifie si l'utilisateur existe déjà ===
+    $check = $u->connect($login, $password);
+    if (!$check) {
+        echo "== REGISTER (création initiale) ==\n";
+        $res = $u->register($login, $password, $email, "Nicole", "Castillo");
+        if (isset($res['error'])) {
+            echo "Erreur à l'inscription : " . $res['error'] . "\n";
+            exit;
+        }
+        print_r($u->getAllInfos());
+    } else {
+        echo "== CONNECT (utilisateur déjà existant) ==\n";
+        print_r($u->getAllInfos());
+    }
+
+    echo "\n== UPDATE (modif email sans mdp) ==\n";
+    $u->update($login, null, "$login-new@test.com", "Nicole", "Castillo");
     print_r($u->getAllInfos());
 
-    echo "\n== disconnect ==\n";
+    echo "\n== UPDATE (avec changement de mot de passe) ==\n";
+    $u->update($login, "Newpass@456", $u->getEmail(), $u->getFirstname(), $u->getLastname());
+
+    echo "Test reconnexion avec ancien mot de passe : ";
     $u->disconnect();
-    var_dump($u->isConnected());
+    var_dump($u->connect($login, $password)); // false attendu
 
-    echo "\n== connect ==\n";
-    $ok = $u->connect($login, "password123");
-    var_dump($ok, $u->getAllInfos());
+    echo "Test reconnexion avec nouveau mot de passe : ";
+    var_dump($u->connect($login, "Newpass@456")); // true attendu
 
-    echo "\n== update (no password change) ==\n";
-    $u->update($login, null, "$login-2@test.com", "Nicole", "Castillo");
-    print_r($u->getAllInfos());
+    // PAS DE DELETE ICI
+    // echo "\n== DELETE ==\n";
+    // var_dump($u->delete());
+    // var_dump($u->isConnected());
 
-    echo "\n== update (with password) ==\n";
-    $u->update($u->getLogin(), "newpass456", $u->getEmail(), $u->getFirstname(), $u->getLastname());
-
-    echo "Test de reconnexion avec ancien mot de passe : ";
-    $u->disconnect();
-    var_dump($u->connect($login, "password123"));
-    echo "Test de reconnexion avec nouveau mot de passe : ";
-    var_dump($u->connect($login, "newpass456"));
-
-    echo "\n== delete ==\n";
-    var_dump($u->delete());
-    var_dump($u->isConnected());
-
-    // Vérifie que l'utilisateur a bien disparu :
-    echo "\n== tentative de reconnexion après suppression ==\n";
-    var_dump($u->connect($login, "newpass456"));
+    echo "\nTests terminés sans suppression.";
 } catch (Throwable $e) {
     echo "ERREUR: " . $e->getMessage();
 }
