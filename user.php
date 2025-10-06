@@ -163,7 +163,7 @@ class User
         $firstname = trim($firstname);
         $lastname  = trim($lastname);
 
-        // ✅ Validations
+        // Validations
         if ($msg = $this->validateLogin($login)) return false;
         if ($msg = $this->validateEmail($email)) return false;
         if ($password !== null && $password !== '' && $msg = $this->validatePassword($password)) return false;
